@@ -217,7 +217,7 @@ def create_torch_dataloader(split, config):
         
     loader = DataLoader(dataset,
                         num_workers = config.DATA.NUM_WORKERS,
-                        pin_memory = config.DATA.PIN_MEMORY)
+                        pin_memory = config.DATA.PIN_MEMORY and torch.cuda.is_available())
     
     return loader, dataset
 

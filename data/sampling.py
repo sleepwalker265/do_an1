@@ -26,7 +26,7 @@ import logging
 import collections
 MAX_SPANNING_LEAVES_ELIGIBLE = 392
 
-
+RNG = np.random.RandomState(42)  # Thêm dòng này vào đầu file
 
 
 

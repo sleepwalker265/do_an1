@@ -23,7 +23,8 @@ def setup_seed(seed):
     Fix some seeds.
     """
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
 
@@ -63,9 +64,9 @@ def train(config):
     num_classes = train_dataset.num_classes if hasattr(train_dataset, "num_classes") else None
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
+    logger.info(f"Using device: {device}")
 
-    
-    model = get_model(config, num_classes).cuda() if num_classes is not None else get_model(config).cuda()
+    model = get_model(config, num_classes).to(device) if num_classes is not None else get_model(config).to(device)
 
     max_accuracy = [0.0]*config.SAVE_TOP_K_MODEL
 
@@ -141,8 +142,9 @@ def test(config):
     test_dataloader, test_dataset = create_torch_dataloader(Split.TEST, config)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
+    logger.info(f"Using device: {device}")
 
-    model = get_model(config).cuda()
+    model = get_model(config).to(device)
 
     if config.MODEL.PRETRAINED:
         load_pretrained(config, model, logger)
@@ -312,11 +314,16 @@ def testing(config, dataset,data_loader, model):
 
 if __name__ == '__main__':
     args, config = parse_option()
-    torch.cuda.set_device(config.GPU_ID)
-    
+    device = torch.device(f"cuda:{config.GPU_ID}" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
     config.defrost()
-
+    # On CPU: disable pin_memory (only useful for GPU transfers)
+    # and set num_workers=0 on Windows to avoid multiprocessing issues
+    if not torch.cuda.is_available():
+        config.DATA.PIN_MEMORY = False
+        config.DATA.NUM_WORKERS = 0
+        print("CPU mode: pin_memory disabled, num_workers set to 0")
     config.freeze()
 
     setup_seed(config.SEED)

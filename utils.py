@@ -97,7 +97,8 @@ def load_pretrained(config, model, logger):
     logger.info(f"=> loaded successfully '{config.MODEL.PRETRAINED}'")
 
     del checkpoint
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 def auto_resume_helper(output_dir):
     checkpoints = os.listdir(output_dir)
@@ -138,5 +139,6 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
         logger.info(f"load step:{step}")
 
     del checkpoint
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     return max_accuracy, step

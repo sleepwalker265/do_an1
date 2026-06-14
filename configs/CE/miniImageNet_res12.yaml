@@ -25,13 +25,13 @@ DATA:
     DATASET_NAMES:
     - miniImageNet
     DATASET_ROOTS:
-    - /home/wuhao/data/mini_imagenet/images_imagefolder
+    - D:\code demo\miniImageNet\miniImageNet
     EPISODE_DESCR_CONFIG:
       MAX_NUM_QUERY: 15
       MIN_EXAMPLES_IN_CLASS: 20
       NUM_QUERY: 15
       NUM_SUPPORT: 5
-      NUM_TASKS_PER_EPOCH: 600
+      NUM_TASKS_PER_EPOCH: 60
       NUM_WAYS: 5
       USE_DAG_HIERARCHY: false
 GPU_ID: 2
@@ -43,4 +43,4 @@ MODEL:
 OUTPUT: ../new_metadataset_result
 TRAIN:
   BASE_LR: 0.2
-  EPOCHS: 60
+  EPOCHS: 5

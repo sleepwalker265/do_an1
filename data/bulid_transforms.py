@@ -1,5 +1,5 @@
-import nvidia.dali.ops as ops
-import nvidia.dali.types as types
+#import nvidia.dali.ops as ops
+#import nvidia.dali.types as types
 import torchvision.transforms as transforms
 
             

@@ -13,16 +13,17 @@ class EpisodicTraining(nn.Module):
         self.classifier = get_classifier(config.MODEL.CLASSIFIER, *config.MODEL.CLASSIFIER_PARAMETERS)
     
     def forward(self,img_tasks,label_tasks, *args, **kwargs):
+        device = next(self.parameters()).device
         batch_size = len(img_tasks)
         loss = 0.
         acc = []
         for i, img_task in enumerate(img_tasks):
-            support_features = self.backbone(img_task["support"].squeeze_().cuda())
-            query_features = self.backbone(img_task["query"].squeeze_().cuda())
+            support_features = self.backbone(img_task["support"].squeeze_().to(device))
+            query_features = self.backbone(img_task["query"].squeeze_().to(device))
             score = self.classifier(query_features, support_features,
-                                    label_tasks[i]["support"].squeeze_().cuda(), **kwargs)
-            loss += F.cross_entropy(score, label_tasks[i]["query"].squeeze_().cuda())
-            acc.append(accuracy(score, label_tasks[i]["query"].cuda())[0])
+                                    label_tasks[i]["support"].squeeze_().to(device), **kwargs)
+            loss += F.cross_entropy(score, label_tasks[i]["query"].squeeze_().to(device))
+            acc.append(accuracy(score, label_tasks[i]["query"].to(device))[0])
         loss /= batch_size
         return loss, acc
     

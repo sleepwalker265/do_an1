@@ -313,7 +313,7 @@ _C.PRINT_FREQ = 10
 _C.SAVE_TOP_K_MODEL = 5
 
 # specify specific epochs to save
-_C.SAVE_EPOCHS = [20,40]
+_C.SAVE_EPOCHS = [2, 4]
 
 
 # -----------------------------------------------------------------------------

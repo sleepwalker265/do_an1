@@ -22,8 +22,9 @@ class CrossEntropyTraining(nn.Module):
     
     
     def train_forward(self, imgs,labels, *args, **kwargs):
-        imgs = imgs.squeeze_().cuda()
-        labels = labels.squeeze_().cuda()
+        device = next(self.parameters()).device
+        imgs = imgs.squeeze_().to(device)
+        labels = labels.squeeze_().to(device)
 
         features = self.backbone(imgs)
         if features.dim() == 4:
@@ -34,16 +35,17 @@ class CrossEntropyTraining(nn.Module):
         return loss, acc
 
     def val_test_forward(self,img_tasks,label_tasks, *args, **kwargs):
+        device = next(self.parameters()).device
         batch_size = len(img_tasks)
         loss = 0.
         acc = []
         for i, img_task in enumerate(img_tasks):
-            support_features = self.backbone(img_task["support"].squeeze_().cuda())
-            query_features = self.backbone(img_task["query"].squeeze_().cuda())
+            support_features = self.backbone(img_task["support"].squeeze_().to(device))
+            query_features = self.backbone(img_task["query"].squeeze_().to(device))
             score = self.val_test_classifier(query_features, support_features,
-                                    label_tasks[i]["support"].squeeze_().cuda(), **kwargs)
-            loss += F.cross_entropy(score, label_tasks[i]["query"].squeeze_().cuda())
-            acc.append(accuracy(score, label_tasks[i]["query"].cuda())[0])
+                                    label_tasks[i]["support"].squeeze_().to(device), **kwargs)
+            loss += F.cross_entropy(score, label_tasks[i]["query"].squeeze_().to(device))
+            acc.append(accuracy(score, label_tasks[i]["query"].to(device))[0])
         loss /= batch_size
         return loss, acc
     
