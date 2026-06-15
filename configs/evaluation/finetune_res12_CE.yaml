@@ -17,9 +17,9 @@ DATA:
   TEST:
     BATCH_SIZE: 8
     DATASET_NAMES:
-    - Traffic Signs
+    - miniImage
     DATASET_ROOTS:
-    - ../data/traffic
+    - /kaggle/input/datasets/anhnguynlm/miniimage/miniImageNet/miniImageNet
     EPISODE_DESCR_CONFIG:
       MAX_NUM_QUERY: 15
       MIN_EXAMPLES_IN_CLASS: 16
@@ -36,15 +36,15 @@ MODEL:
   BACKBONE: resnet12
   CLASSIFIER: finetune
   CLASSIFIER_PARAMETERS:
-  - 100
+  - 30
   - 100
   - 10
-  - 0.02
-  - 0.1
+  - 0.01
+  - 0.5
   - false
   - false
   - fc
   NAME: evaluation
-  PRETRAINED: ../pretrained_models/ce_miniImageNet_res12.ckpt
+  PRETRAINED: /kaggle/input/datasets/anhnguynlm/checkpoint/ckpt_epoch_76_top1.pth
   TYPE: fewshot_finetune
 OUTPUT: ../new_metadataset_result
