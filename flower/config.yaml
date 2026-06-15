@@ -1,0 +1,73 @@
+# =====================================================================
+# Federated ProtoNet (Flower) — Configuration
+# =====================================================================
+
+# --- Flower Server ---
+server:
+  address: "0.0.0.0:8080"
+  num_rounds: 50            # number of federated rounds
+  min_fit_clients: 2        # min clients to start a fit round
+  min_evaluate_clients: 2   # min clients for evaluation
+  min_available_clients: 2  # wait until this many clients available
+  fraction_fit: 1.0         # fraction of clients used in each round
+  fraction_evaluate: 1.0
+
+# --- Flower Client ---
+client:
+  # local training epochs per round (1 epoch = NUM_TASKS_PER_EPOCH episodes)
+  local_epochs: 1
+
+# --- Model (must match the checkpoint) ---
+model:
+  backbone: "resnet12"
+  backbone_hyperparameters: []
+  classifier: "proto_head"
+  classifier_parameters: []
+
+# --- Checkpoint to resume from (best PN checkpoint) ---
+pretrained: "checkpoint/miniImageNet_Res12_PN/default/ckpt_epoch_76_top1.pth"
+
+# --- Dataset (episodic, per-client) ---
+data:
+  img_size: 84
+  mean: [0.4712, 0.4499, 0.4031]
+  std:  [0.2726, 0.2634, 0.2794]
+  num_workers: 0
+  pin_memory: false
+
+  # Each client points to its own local data split.
+  # Override at runtime: --client-id 0|1|...
+  # The list below is the default per-client dataset root.
+  client_dataset_roots:
+    - "data/client_0/miniImageNet"
+    - "data/client_1/miniImageNet"
+
+  dataset_name: "miniImageNet"
+
+  # Episodic episode config (same as original PN training)
+  episode:
+    is_episodic: true
+    num_ways: 5
+    num_support: 5
+    num_query: 15
+    num_tasks_per_epoch: 100
+    min_examples_in_class: 20
+    use_dag_hierarchy: false
+    sequential_sampling: 0
+
+# --- Optimiser ---
+optimizer:
+  name: "SGD"
+  lr: 0.01          # smaller LR for federated fine-tuning
+  momentum: 0.9
+  weight_decay: 5e-4
+
+lr_scheduler:
+  name: "cosine"
+  schedule_per_step: true
+
+# --- Misc ---
+seed: 42
+gpu_id: 0
+output_dir: "flower/results"
+print_freq: 10
