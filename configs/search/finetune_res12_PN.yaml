@@ -33,19 +33,10 @@ GPU_ID: 2
 IS_TRAIN: 0
 MODEL:
   BACKBONE: resnet12
-  CLASSIFIER: finetune
-  CLASSIFIER_PARAMETERS:
-  - 100
-  - 100
-  - null
-  - null
-  - null
-  - false
-  - false
-  - fc
+  CLASSIFIER: proto_head
   NAME: evaluation
   PRETRAINED: /kaggle/working/ckpt_epoch_76_top1.pth
-  TYPE: fewshot_finetune
+  TYPE: Episodic_Model
 OUTPUT: /kaggle/working/new_metadataset_result
 SEARCH_HYPERPARAMETERS:
   EPOCH_RANGE:
