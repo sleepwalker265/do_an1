@@ -1,104 +1,140 @@
 """
-Data utilities for Federated ProtoNet
+Data utilities for Federated ProtoNet.
 
-Handles episodic dataset loading and preparation for distributed learning.
+Builds an episodic DataLoader by delegating to the existing
+`create_torch_dataloader` infrastructure in the main codebase,
+but constructing a lightweight yacs config on-the-fly from the
+plain-dict config read from config.yaml.
 """
 
+import sys
 import os
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 import torch
-from torch.utils.data import DataLoader, Dataset
-from typing import Dict, List, Optional, Tuple
+from yacs.config import CfgNode as CN
+from data import create_torch_dataloader
+from data.dataset_spec import Split
 
 
-class EpisodicDataset(Dataset):
+# ---------------------------------------------------------------------------
+# Build a minimal yacs config that satisfies create_torch_dataloader
+# ---------------------------------------------------------------------------
+
+def _build_split_cfg(split_dict: dict, episode_cfg: dict) -> CN:
+    """Create the DATA.TRAIN / DATA.VALID CN from a plain dict."""
+    node = CN()
+    node.BATCH_SIZE         = split_dict.get("batch_size", 1)
+    node.DATASET_NAMES      = split_dict["dataset_names"]
+    node.DATASET_ROOTS      = split_dict["dataset_roots"]
+    node.SAMPLING_FREQUENCY = split_dict.get("sampling_frequency", [1.0])
+    node.IS_EPISODIC        = episode_cfg.get("is_episodic", True)
+    node.SHUFFLE            = split_dict.get("shuffle", True)
+    node.ITERATION_PER_EPOCH = split_dict.get("iteration_per_epoch", None)
+
+    ep = CN()
+    ep.NUM_TASKS_PER_EPOCH               = episode_cfg.get("num_tasks_per_epoch", 100)
+    ep.SEQUENTIAL_SAMPLING               = episode_cfg.get("sequential_sampling", 0)
+    ep.NUM_WAYS                          = episode_cfg.get("num_ways", 5)
+    ep.NUM_SUPPORT                       = episode_cfg.get("num_support", 5)
+    ep.NUM_QUERY                         = episode_cfg.get("num_query", 15)
+    ep.MIN_WAYS                          = episode_cfg.get("min_ways", 5)
+    ep.MAX_WAYS_UPPER_BOUND              = episode_cfg.get("max_ways_upper_bound", 50)
+    ep.MAX_NUM_QUERY                     = episode_cfg.get("max_num_query", 15)
+    ep.MIN_EXAMPLES_IN_CLASS             = episode_cfg.get("min_examples_in_class", 0)
+    ep.MAX_SUPPORT_SET_SIZE              = episode_cfg.get("max_support_set_size", 500)
+    ep.MAX_SUPPORT_SIZE_CONTRIB_PER_CLASS= episode_cfg.get("max_support_size_contrib_per_class", 100)
+    ep.MIN_LOG_WEIGHT                    = episode_cfg.get("min_log_weight", -0.693147)
+    ep.MAX_LOG_WEIGHT                    = episode_cfg.get("max_log_weight",  0.693147)
+    ep.USE_DAG_HIERARCHY                 = episode_cfg.get("use_dag_hierarchy", False)
+    ep.USE_BILEVEL_HIERARCHY             = episode_cfg.get("use_bilevel_hierarchy", False)
+
+    node.EPISODE_DESCR_CONFIG = ep
+    return node
+
+
+def build_yacs_config(cfg: dict, client_id: int, split: Split) -> CN:
     """
-    Base class for episodic datasets used in few-shot learning.
-    Generates tasks (episodes) with support and query sets.
+    Construct a full yacs CfgNode compatible with create_torch_dataloader.
+
+    Parameters
+    ----------
+    cfg       : the top-level dict from config.yaml
+    client_id : index into cfg['data']['client_dataset_roots']
+    split     : Split.TRAIN | Split.VALID | Split.TEST
     """
-    def __init__(self, data_root: str, img_size: int = 84, 
-                 mean: List[float] = None, std: List[float] = None):
-        self.data_root = data_root
-        self.img_size = img_size
-        self.mean = mean or [0.4712, 0.4499, 0.4031]
-        self.std = std or [0.2726, 0.2634, 0.2794]
+    data_cfg     = cfg["data"]
+    episode_cfg  = data_cfg["episode"]
+    client_roots = data_cfg["client_dataset_roots"]
 
-    def __len__(self) -> int:
-        raise NotImplementedError
+    if client_id >= len(client_roots):
+        raise ValueError(
+            f"client_id={client_id} but only {len(client_roots)} roots defined "
+            f"in config.yaml → data.client_dataset_roots"
+        )
 
-    def __getitem__(self, idx: int):
-        raise NotImplementedError
+    dataset_root = client_roots[client_id]
+    dataset_name = data_cfg["dataset_name"]
 
+    # ---- augmentation ----
+    aug = CN()
+    aug.MEAN            = data_cfg["mean"]
+    aug.STD             = data_cfg["std"]
+    aug.COLOR_JITTER    = None
+    aug.GRAY_SCALE      = None
+    aug.GAUSSIAN_BLUR   = None
+    aug.FLIP            = 0.5
+    aug.TEST_CROP       = False
 
-def load_episodic_data(data_root: str, 
-                       num_ways: int = 5,
-                       num_support: int = 5,
-                       num_query: int = 15,
-                       num_tasks: int = 100,
-                       img_size: int = 84,
-                       mean: List[float] = None,
-                       std: List[float] = None) -> DataLoader:
-    """
-    Load episodic data for few-shot learning.
-    
-    Args:
-        data_root: Path to dataset root
-        num_ways: Number of classes per task
-        num_support: Number of support examples per class
-        num_query: Number of query examples per class
-        num_tasks: Number of tasks (episodes) per epoch
-        img_size: Image size
-        mean: Normalization mean
-        std: Normalization std
-    
-    Returns:
-        DataLoader for episodic tasks
-    """
-    dataset = EpisodicDataset(
-        data_root=data_root,
-        img_size=img_size,
-        mean=mean,
-        std=std
+    # ---- per-split dataset config ----
+    split_dict = {
+        "dataset_names"  : [dataset_name],
+        "dataset_roots"  : [dataset_root],
+        "batch_size"     : 1 if split == Split.TRAIN else 4,
+        "shuffle"        : split == Split.TRAIN,
+        "iteration_per_epoch": None,
+    }
+
+    # For validation reduce num_tasks
+    ep_cfg = dict(episode_cfg)
+    if split == Split.VALID:
+        ep_cfg["num_tasks_per_epoch"] = max(30, episode_cfg.get("num_tasks_per_epoch", 100) // 3)
+
+    root = CN()
+    root.AUG  = aug
+    root.DATA = CN()
+    root.DATA.IMG_SIZE         = data_cfg["img_size"]
+    root.DATA.NUM_WORKERS      = data_cfg.get("num_workers", 0)
+    root.DATA.PIN_MEMORY       = data_cfg.get("pin_memory", False)
+    root.DATA.DATASET_ROOT     = dataset_root
+    root.DATA.PATH_TO_WORDS    = data_cfg.get("path_to_words", "data/words.txt")
+    root.DATA.PATH_TO_IS_A     = data_cfg.get("path_to_is_a", "data/wordnet.is_a.txt")
+    root.DATA.PATH_TO_NUM_LEAF_IMAGES = data_cfg.get(
+        "path_to_num_leaf_images", "data/ImageNet_num_images_perclass.json"
     )
-    
-    loader = DataLoader(
-        dataset,
-        batch_size=1,
-        shuffle=True,
-        num_workers=0,
-        pin_memory=False
+    root.DATA.TRAIN_SPLIT_ONLY = False
+
+    root.DATA.TRAIN = _build_split_cfg(split_dict, ep_cfg)
+    root.DATA.VALID = _build_split_cfg(
+        {**split_dict, "batch_size": 4, "shuffle": False}, ep_cfg
     )
-    
-    return loader
+    root.DATA.TEST  = _build_split_cfg(
+        {**split_dict, "batch_size": 4, "shuffle": False}, ep_cfg
+    )
+
+    return root
 
 
-def split_support_query(data: torch.Tensor, num_support: int) -> Tuple[torch.Tensor, torch.Tensor]:
+def get_dataloaders(cfg: dict, client_id: int):
     """
-    Split data into support and query sets.
-    
-    Args:
-        data: Input data tensor
-        num_support: Number of support examples
-    
-    Returns:
-        Tuple of (support_set, query_set)
+    Return (train_loader, train_dataset, val_loader, val_dataset).
     """
-    support = data[:num_support]
-    query = data[num_support:]
-    return support, query
+    yacs_cfg = build_yacs_config(cfg, client_id, Split.TRAIN)
 
+    train_loader, train_dataset = create_torch_dataloader(Split.TRAIN, yacs_cfg)
+    val_loader,   val_dataset   = create_torch_dataloader(Split.VALID, yacs_cfg)
 
-def normalize_batch(batch: torch.Tensor, mean: List[float], std: List[float]) -> torch.Tensor:
-    """
-    Normalize a batch of images.
-    
-    Args:
-        batch: Batch of images [B, C, H, W]
-        mean: Normalization mean per channel
-        std: Normalization std per channel
-    
-    Returns:
-        Normalized batch
-    """
-    mean_t = torch.tensor(mean).view(1, -1, 1, 1)
-    std_t = torch.tensor(std).view(1, -1, 1, 1)
-    return (batch - mean_t) / std_t
+    return train_loader, train_dataset, val_loader, val_dataset
