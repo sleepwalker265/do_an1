@@ -1,3 +1,4 @@
+%%writefile /kaggle/working/do_an1/configs/search/finetune_res12_PN.yaml
 AUG:
   MEAN:
   - 0.4712
