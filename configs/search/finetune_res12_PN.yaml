@@ -46,7 +46,7 @@ MODEL:
   NAME: evaluation
   PRETRAINED:/kaggle/input/datasets/anhnguynlm/checkpoint/ckpt_epoch_76_top1 (1).pth
   TYPE: fewshot_finetune
-OUTPUT: ../new_metadataset_result
+OUTPUT: /kaggle/working/new_metadataset_result
 SEARCH_HYPERPARAMETERS:
   EPOCH_RANGE:
   - 10
