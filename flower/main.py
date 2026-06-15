@@ -4,16 +4,16 @@ Federated ProtoNet — Entry Point (main.py)
 Usage
 -----
 # 1. Start the Flower server (aggregator):
-    python -m flower.main --mode server --config flower/config.yaml
+    python -m federated_protonet.main --mode server --config federated_protonet/config.yaml
 
 # 2. Start one client per terminal / machine:
-    python -m flower.main --mode client --client-id 0 --config flower/config.yaml
-    python -m flower.main --mode client --client-id 1 --config flower/config.yaml
+    python -m federated_protonet.main --mode client --client-id 0 --config federated_protonet/config.yaml
+    python -m federated_protonet.main --mode client --client-id 1 --config federated_protonet/config.yaml
 
 Options
 -------
 --mode        server | client
---config      path to config.yaml  (default: flower/config.yaml)
+--config      path to config.yaml  (default: federated_protonet/config.yaml)
 --client-id   integer id of this client (used to pick the local dataset root)
 --server-addr host:port of the Flower server  (default from config.yaml)
 --rounds      override number of federated rounds
@@ -151,7 +151,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         default=os.path.join(os.path.dirname(__file__), "config.yaml"),
-        help="Path to config.yaml  (default: flower/config.yaml)",
+        help="Path to config.yaml  (default: federated_protonet/config.yaml)",
     )
     parser.add_argument(
         "--client-id", type=int, default=0,
@@ -195,7 +195,7 @@ def main():
     server_addr = args.server_addr or cfg["server"].get("address", "0.0.0.0:8080")
 
     # ---- Output dir ----
-    out_dir = cfg.get("output_dir", "flower/results")
+    out_dir = cfg.get("output_dir", "federated_protonet/results")
     os.makedirs(out_dir, exist_ok=True)
 
     # ---- Dispatch ----
