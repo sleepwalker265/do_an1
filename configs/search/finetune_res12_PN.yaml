@@ -60,7 +60,7 @@ MODEL:
   - false
   - fc
   NAME: evaluation
-  PRETRAINED: /kaggle/input/checkpoint-miniimagenet/ckpt_epoch_76_top1.pth
+  PRETRAINED: /kaggle/input/datasets/anhnguynlm/checkpoint/ckpt_epoch_76_top1.pth
   TYPE: fewshot_finetune
 OUTPUT: /kaggle/working/results/miniImageNet_Res12_PN/PN_miniImageNet
 SEARCH_HYPERPARAMETERS:
