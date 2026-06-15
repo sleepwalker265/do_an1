@@ -69,5 +69,5 @@ lr_scheduler:
 # --- Misc ---
 seed: 42
 gpu_id: 0
-output_dir: "flower/results"
+output_dir: "federated_protonet/results"
 print_freq: 10
