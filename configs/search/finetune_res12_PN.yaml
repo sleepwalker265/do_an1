@@ -19,7 +19,7 @@ DATA:
     DATASET_NAMES:
     - miniImageNet
     DATASET_ROOTS:
-    - /kaggle/input/datasets/anhnguynlm/miniimage
+    - /kaggle/input/datasets/anhnguynlm/miniimage/miniImageNet/miniImageNet
     EPISODE_DESCR_CONFIG:
       MAX_NUM_QUERY: 15
       MIN_EXAMPLES_IN_CLASS: 20
