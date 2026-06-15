@@ -17,7 +17,7 @@ DATA:
   TEST:
     BATCH_SIZE: 8
     DATASET_NAMES:
-    - miniImage
+    - miniImageNet
     DATASET_ROOTS:
     - /kaggle/input/datasets/anhnguynlm/miniimage/miniImageNet/miniImageNet
     EPISODE_DESCR_CONFIG:
