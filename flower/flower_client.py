@@ -207,7 +207,7 @@ class ProtoNetClient(fl.client.NumPyClient):
     # Optimiser / scheduler construction
     # ------------------------------------------------------------------
 
-    def _build_optimizer(self):
+   def _build_optimizer(self):
         """
         Construct optimiser and LR scheduler using the existing helpers
         from the main codebase.  We build a lightweight yacs-compatible
@@ -238,11 +238,8 @@ class ProtoNetClient(fl.client.NumPyClient):
         # Wrap in a root config so build_optimizer can access config.TRAIN
         root_cfg = CN()
         root_cfg.TRAIN = train_node
-      
-# Wrap in a root config so build_optimizer can access config.TRAIN
-        root_cfg = CN()
-        root_cfg.TRAIN = train_node
 
+        # Thêm cấu hình DATA cho build_scheduler / build_optimizer nếu cần
         root_cfg.DATA = CN()
         root_cfg.DATA.TRAIN = CN()
         root_cfg.DATA.TRAIN.IS_EPISODIC = ep_cfg.get("is_episodic", True)
@@ -251,7 +248,5 @@ class ProtoNetClient(fl.client.NumPyClient):
 
         optimizer  = build_optimizer(root_cfg, self.model)
         scheduler  = build_scheduler(root_cfg, optimizer, len(self.train_loader))
-        return optimizer, scheduler
-        optimizer  = build_optimizer(root_cfg, self.model)
-        scheduler  = build_scheduler(root_cfg, optimizer, len(self.train_loader))
+        
         return optimizer, scheduler
