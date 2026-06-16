@@ -39,8 +39,7 @@ data:
   # Override at runtime: --client-id 0|1|...
   # The list below is the default per-client dataset root.
   client_dataset_roots:
-    - "data/client_0/miniImageNet"
-    - "data/client_1/miniImageNet"
+    - /kaggle/input/datasets/anhnguynlm/miniimage/miniImageNet/miniImageNet
 
   dataset_name: "miniImageNet"
 
