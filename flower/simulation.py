@@ -69,7 +69,7 @@ def make_client_fn(cfg: dict, device: torch.device):
     Trả về hàm client_fn(cid: str) -> fl.client.Client
     Flower simulation gọi hàm này để tạo client theo yêu cầu.
     """
-    from federated_protonet.flower_client import ProtoNetClient
+    from flower.flower_client import ProtoNetClient
 
     def client_fn(cid: str) -> fl.client.Client:
         client_id = int(cid)
