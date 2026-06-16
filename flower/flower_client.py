@@ -238,7 +238,20 @@ class ProtoNetClient(fl.client.NumPyClient):
         # Wrap in a root config so build_optimizer can access config.TRAIN
         root_cfg = CN()
         root_cfg.TRAIN = train_node
+      
+# Wrap in a root config so build_optimizer can access config.TRAIN
+        root_cfg = CN()
+        root_cfg.TRAIN = train_node
 
+        root_cfg.DATA = CN()
+        root_cfg.DATA.TRAIN = CN()
+        root_cfg.DATA.TRAIN.IS_EPISODIC = ep_cfg.get("is_episodic", True)
+        root_cfg.DATA.TRAIN.ITERATION_PER_EPOCH = None
+        root_cfg.DATA.TRAIN.DATASET_NAMES = [self.cfg["data"].get("dataset_name", "miniImageNet")]
+
+        optimizer  = build_optimizer(root_cfg, self.model)
+        scheduler  = build_scheduler(root_cfg, optimizer, len(self.train_loader))
+        return optimizer, scheduler
         optimizer  = build_optimizer(root_cfg, self.model)
         scheduler  = build_scheduler(root_cfg, optimizer, len(self.train_loader))
         return optimizer, scheduler
