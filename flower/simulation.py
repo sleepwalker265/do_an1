@@ -31,6 +31,9 @@ from flwr.server.strategy import FedAvg
 from flwr.common import Metrics, ndarrays_to_parameters
 from typing import List, Tuple, Dict
 
+# Tự động detect tên package (flower hoặc federated_protonet)
+_PKG_NAME = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -69,7 +72,8 @@ def make_client_fn(cfg: dict, device: torch.device):
     Trả về hàm client_fn(cid: str) -> fl.client.Client
     Flower simulation gọi hàm này để tạo client theo yêu cầu.
     """
-    from federated_protonet.flower_client import ProtoNetClient
+    # Import bằng relative import — hoạt động dù folder tên flower hay federated_protonet
+    from .flower_client import ProtoNetClient
 
     def client_fn(cid: str) -> fl.client.Client:
         client_id = int(cid)
@@ -124,7 +128,8 @@ def run_simulation(
     initial_parameters = None
     pretrained = cfg.get("pretrained", None)
     if pretrained and os.path.exists(pretrained):
-        from federated_protonet.models import build_model, load_checkpoint_into_model, get_parameters
+        # Relative import — hoạt động dù folder tên gì
+        from .models import build_model, load_checkpoint_into_model, get_parameters
         print(f"[Server] Warm-start từ checkpoint: {pretrained}")
         model = build_model(cfg["model"])
         load_checkpoint_into_model(model, pretrained, torch.device("cpu"))
@@ -156,11 +161,21 @@ def run_simulation(
     }
     print(f"[Simulation] Client resources: {client_resources}")
 
+    # ---- Đảm bảo Ray workers tìm được package ----
+    # Ray spawn process riêng, không thừa hưởng sys.path từ notebook.
+    # Cần set PYTHONPATH để workers import được module (flower / federated_protonet).
+    os.environ["PYTHONPATH"] = ROOT + os.pathsep + os.environ.get("PYTHONPATH", "")
+
     # ---- Ray init args mặc định cho Kaggle ----
     if ray_init_args is None:
         ray_init_args = {
             "ignore_reinit_error": True,
             "include_dashboard": False,  # tắt dashboard để tránh lỗi trên Kaggle
+            "runtime_env": {
+                "env_vars": {
+                    "PYTHONPATH": ROOT + os.pathsep + os.environ.get("PYTHONPATH", "")
+                },
+            },
         }
         if has_gpu:
             ray_init_args["num_gpus"] = torch.cuda.device_count()
