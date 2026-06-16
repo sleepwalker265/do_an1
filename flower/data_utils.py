@@ -119,10 +119,10 @@ def build_yacs_config(cfg: dict, client_id: int, split: Split) -> CN:
 
     root.DATA.TRAIN = _build_split_cfg(split_dict, ep_cfg)
     root.DATA.VALID = _build_split_cfg(
-        {**split_dict, "batch_size": 4, "shuffle": False}, ep_cfg
+        {**split_dict, "batch_size": 1, "shuffle": False}, ep_cfg
     )
     root.DATA.TEST  = _build_split_cfg(
-        {**split_dict, "batch_size": 4, "shuffle": False}, ep_cfg
+        {**split_dict, "batch_size": 1, "shuffle": False}, ep_cfg
     )
     root.SEED = cfg.get("seed", 42)
     return root
