@@ -57,9 +57,9 @@ data:
 # --- Optimiser ---
 optimizer:
   name: "SGD"
-  lr: 0.01          # smaller LR for federated fine-tuning
+  lr: 0.01          
   momentum: 0.9
-  weight_decay: 5e-4
+  weight_decay: 0.0005
 
 lr_scheduler:
   name: "cosine"
