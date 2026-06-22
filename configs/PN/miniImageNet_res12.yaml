@@ -51,4 +51,4 @@ MODEL:
 OUTPUT: ../new_metadataset_result
 TRAIN:
   BASE_LR: 0.05
-  EPOCHS: 5
+  EPOCHS: 150
