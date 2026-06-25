@@ -37,7 +37,7 @@ DATA:
 GPU_ID: 0
 MODEL:
   BACKBONE: resnet12
-  CLASSIFIER: proto_head
+  CLASSIFIER: LR
   NAME: miniImageNet_Res12_CE
   TYPE: CE
 OUTPUT: ../new_metadataset_result
